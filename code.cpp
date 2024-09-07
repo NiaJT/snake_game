@@ -1,40 +1,87 @@
-#include <iostream>
-#include <conio.h>
-#include <windows.h>
-#include <mmsystem.h>
-#include <cstdlib> 
-#include <ctime> 
+//Author:Niraj Thapa
+//Code for snake game in C++
+//If the music is not running click the project options and in the parameters add -lwinmm in linker section
+#include <iostream>//for input output instructions
+#include <fstream>//for file handling
+#include <conio.h>//for getch instructions
+#include <windows.h>//for music
+#include <mmsystem.h>//for music
+#include <cstdlib> //to use srand
+#include <ctime> //to use time for random value generation
 using namespace std;
-#define KEY_UP 72
+#define KEY_UP 72//for using the arrow keys for snake movement
 #define KEY_DOWN 80
 #define KEY_RIGHT 77
 #define KEY_LEFT 75
-#pragma comment(lib,"winmm.lib")
-bool gameOver;
+#pragma comment(lib,"winmm.lib")//for music files
 const int width = 40;
 const int height = 20;
 int x, y, fruitX, fruitY, score;
 int tailX[100], tailY[100];
-int nTail,sleep_value;
-string username;
+int nTail, sleep_value;
+string username,uname;
 enum eDirecton { STOP = 0, LEFT, RIGHT, UP, DOWN };
 eDirecton dir;
-char snakeDesign = 'o',Ans;
-
+char snakeDesign = 'o', Ans;
+bool gameOver;
+int highscore;
+//The game intro sound while it displays the instructions
 void PlayIntroSound() {
-    PlaySound(TEXT("snake_game\\music\\intro.wav"), NULL, SND_FILENAME | SND_ASYNC);
+    PlaySound(TEXT("music\\intro.wav"), NULL, SND_FILENAME | SND_ASYNC);
 }
-
+//To stop the intro sound during the game play
 void StopIntroSound() {
     PlaySound(NULL, NULL, SND_PURGE);
 }
+//To produce eating sound when the snake eats the food
 void eatSound() {
-    PlaySound(TEXT("snake_game\\music\\eat.wav"), NULL, SND_FILENAME | SND_ASYNC);
+    PlaySound(TEXT("music\\eat.wav"), NULL, SND_FILENAME | SND_ASYNC);
 }
+// Sound when you lose
 void loseSound(){
-	PlaySound(TEXT("snake_game\\music\\lose.wav"), NULL, SND_FILENAME | SND_ASYNC);
+	PlaySound(TEXT("music\\lose.wav"), NULL, SND_FILENAME | SND_ASYNC);
 }
-
+//Sound for highscore
+void HighscoreSound() {
+    PlaySound(TEXT("music\\highscore.wav"), NULL, SND_FILENAME | SND_ASYNC);
+}
+//Load the highscore before gameplay
+void loadHighscore() {
+    ifstream in("highscore.txt");
+    if (in.is_open()) {
+        in >> highscore;
+        in.ignore(); // Ignore the newline after the highscore
+        getline(in, uname); // Read the entire line for uname
+        in.close();
+    } else {
+        highscore = 0;
+        uname = "none";
+    }
+}
+//Save the highscore if achieved
+void saveHighscore() {
+	HighscoreSound();
+	highscore=score;
+	uname=username;
+	system("cls");
+    cout << "\t\t\t\t#############################################" << endl;
+    cout << "\t\t\t\t#                                           #" << endl;
+    cout << "\t\t\t\t#               NEW HIGHSCORE               #" << endl;
+    cout << "\t\t\t\t#                                           #" << endl;
+    cout << "\t\t\t\t#############################################" << endl;
+    ofstream out("highscore.txt");
+    if (out.is_open()) {
+         out << highscore;
+         out<<" ";
+out << uname; // Write highscore and username on separate lines
+        out.close();
+    } else {
+        cerr << "Error opening file for writing!" << endl;
+    }
+       cout<<username<<", Do you want to play again?(y/n):";
+    cin>>Ans;
+}
+//To display the Introduction and instructions
 void showIntro() {
     PlayIntroSound();
     cout << "\n\n\n\n";
@@ -59,6 +106,8 @@ void showIntro() {
     getch();
 
 }
+
+//To display that you have lost the game
 void lose(){
 		loseSound();
 	cout << "\n\n";
@@ -70,6 +119,7 @@ void lose(){
     cout<<username<<", Do you want to play again?(y/n):";
     cin>>Ans;
 }
+//To print the difficulty menu
 void DifficultyMenu() {
     system("cls");
     cout<<"Enter your Username:";
@@ -108,7 +158,7 @@ void DifficultyMenu() {
     }
     Sleep(1000);
 }
-
+//To ask the user for the type of snake
 void SnakeDesignMenu() {
     system("cls");
     int choice;
@@ -141,7 +191,7 @@ void SnakeDesignMenu() {
     Sleep(1000);
     StopIntroSound();
 }
-
+//To setup the game to initial value before starting
 void Setup() {
     gameOver = false;
     dir = STOP;
@@ -152,9 +202,9 @@ void Setup() {
     fruitY = rand() % height;
     score = 0;
 }
-
+//To draw the snake and the board while the play is going on
 void Draw() {
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {0,0});
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {0,0});//To position the cursor to the top left of the console
     for (int i = 0; i < width + 2; i++)
         cout << ".";
     cout << endl;
@@ -187,10 +237,12 @@ void Draw() {
     for (int i = 0; i < width + 2; i++)
         cout << ".";
     cout << endl;
-    cout<<"Username:"<<username<<endl;
+    cout<<"Username:"<<username<<endl;//printing the username with the present score
     cout << "Score:" << score << endl;
+    cout<<"Highscore:"<< highscore<<endl;
+    	cout<<"Highscore by:"<<uname<<endl;
 }
-
+//Taking the keyboard arrow input
 void Input() {
     if (_kbhit()) {
         switch (_getch()) {
@@ -214,7 +266,7 @@ void Input() {
         }
     }
 }
-
+//The logic to play the game and make the snake tail follow the head
 void Logic() {
     int prevX = tailX[0];
     int prevY = tailY[0];
@@ -261,6 +313,7 @@ void Logic() {
         }
     }
 }
+//To hide the cursor during gameplay
    void HideCursor() {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
@@ -268,6 +321,7 @@ void Logic() {
     cursorInfo.bVisible = FALSE; // Set the cursor visibility to FALSE
     SetConsoleCursorInfo(hConsole, &cursorInfo);
 }
+//To show the cursor after game finishes
 void ShowCursor() {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO cursorInfo;
@@ -275,6 +329,7 @@ void ShowCursor() {
     cursorInfo.bVisible = TRUE; // Set the cursor visibility to TRUE
     SetConsoleCursorInfo(hConsole, &cursorInfo);
 }
+//To reset the game if they want to play again
 void ResetGame() {
     dir = STOP;
     x = width / 2;
@@ -285,28 +340,30 @@ void ResetGame() {
     nTail = 0;
     gameOver = false;
 }
-
-
 int main() {
+    loadHighscore();  
 StartOver:
-		ResetGame();
-        system("cls");
-        showIntro();
-        DifficultyMenu();
-        SnakeDesignMenu();
-        system("cls");
-        Setup();
-        HideCursor();
-        while (!gameOver) {
-            Draw();
-            Input();
-            Logic();
-            Sleep(sleep_value);
-        }
-        lose();
-        if(Ans == 'y' || Ans == 'Y')
+    ResetGame();
+    system("cls");
+    showIntro();
+    DifficultyMenu();
+    SnakeDesignMenu();
+    system("cls");
+    Setup();
+    HideCursor();
+    while (!gameOver) {
+        Draw();
+        Input();
+        Logic();
+        Sleep(sleep_value);
+    }
+    if(score>highscore)
+    saveHighscore();
+    else
+    lose();
+    if (Ans == 'y' || Ans == 'Y')
         goto StartOver;
-        system("cls");
+    system("cls");
     ShowCursor();
     return 0;
 }
